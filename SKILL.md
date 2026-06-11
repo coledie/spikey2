@@ -1,0 +1,58 @@
+# SKILL: running snn2 experiments
+
+You drive `snn2` by writing **specs** (plain dicts) and reading **metrics** (plain
+dicts). You never write a class, a training loop, or touch the engine.
+
+## The only functions you call
+
+```python
+import snn2
+snn2.run(spec) -> metrics                  # one experiment
+snn2.sweep(base_spec, grid) -> [spec, ...] # cartesian product of deltas
+snn2.schedule([spec, ...]) -> {hash: metrics}   # many, batched, deduped
+snn2.schedule_ray([spec, ...])             # same, multi-process (needs ray)
+snn2.tune_run(search_space, num_samples=N) # async hyperparam search (needs ray)
+```
+
+## What a spec is
+
+A flat dict. Start from a preset and override only what you care about:
+
+```python
+{"preset": "izhi_randstate", "lr": 0.1, "stdp_window": 100}
+```
+
+`snn2.PRESETS` lists presets; `snn2.DEFAULTS` lists keys you may omit.
+`snn2.expand(spec)` shows the fully-resolved config that will run and be hashed.
+
+## What metrics come back
+
+`{"spec": <resolved>, "final_reward": float, "mean_out_rate": float, "weight_norm": float}`.
+`mean_out_rate` near 0 means the net is silent; near 1 means it is saturated --
+either extreme means no learning signal. Aim for a graded middle.
+
+## Adding a model (only if a preset/part doesn't exist)
+
+One registered pure function, then it's a string anywhere:
+
+```python
+@snn2.register("neuron", "my_model")
+def my_model(state, I, p, rng):
+    ...
+    return state, fired   # fired: [B, N] bool
+```
+
+Part contracts: neuron `(state,I,p,rng)->(state,fired)`,
+input `(state_int,rng,p)->spikes[B,n_inputs]`,
+readout `(out_spikes[B,T,n_outputs],p)->action[B]`,
+reward `(state,action,state_next,p)->reward[B]`.
+
+## Rules of thumb
+
+- Vary parameters via `sweep`/`tune_run`, never by mutating a preset in place.
+- Same-shape specs (same sizes/parts) batch together; differing `n_neurons`/
+  `n_inputs` go in separate buckets automatically.
+- Give lanes different `len_episode` freely -- the active-mask handles staggered
+  and uneven episodes in one batched run.
+- Before trusting any result, run `python -m snn2.validate` (the learning rule
+  must match its reference oracle and pass the sign/zero/recency properties).
