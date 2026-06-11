@@ -216,30 +216,6 @@ python examples/farries.py      # also renders farries_fig.png
 This is the theoretical backbone under the conditioning and logic-gate demos. Full
 derivation and method in **`docs/farries.md`**.
 
-## Where the dopamine signal comes from: Chorley & Seth (2011)
-
-Florian and Farries & Fairhall *consume* a dopamine/reward signal. Chorley & Seth
-model **where it comes from** — a dual-pathway circuit (fast SEN→INT→DA excitation
-racing a slow PFC→STR→DA inhibition, both under DA-modulated plasticity) in which
-the canonical dopamine shift from reward (US) to reward-predicting cue (CS) emerges.
-
-```bash
-python -m snn2.chorley_seth         # 6 validation checks + summary
-python examples/chorley_seth.py     # also renders chorley_seth_fig.png
-```
-
-![Chorley & Seth: dual-pathway DA reward-prediction](chorley_seth_fig.png)
-
-- The **CS response emerges** (DA learns to fire to the cue) via DA-STDP and the
-  distal-reward eligibility mechanism — peri-event DA goes from a single US peak to
-  both a CS and a US peak.
-- The **inhibitory pathway** develops anticipatory STR firing near the US.
-
-This is a faithful *reduced-scale* reproduction: the cue-response shift is robust;
-full *cancellation* of the US response (the sharply-timed inhibitory volley) needs
-the paper's larger polychronous substrate and is partial here — documented honestly
-in **`docs/chorley_seth.md`**.
-
 ## Validating that grouping is correct (instrumental conditioning)
 
 The whole speed story rests on **grouping**: many experiments share one batched
