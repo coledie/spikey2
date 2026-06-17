@@ -49,7 +49,7 @@ from __future__ import annotations
 import numpy as np
 
 from .engine import run_bucket
-from .spec import expand, GATES, _operand_rate_map
+from ..spec import expand, GATES, _operand_rate_map
 
 
 # --------------------------------------------------------------------------- #
