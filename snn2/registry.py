@@ -9,6 +9,10 @@ from __future__ import annotations
 
 _REGISTRY: dict[str, dict[str, object]] = {
     "neuron": {}, "input": {}, "readout": {}, "reward": {}, "game": {},
+    # An engine is just another swappable part: a spec names it by string, the
+    # scheduler looks it up. "batched" (stateful games) and "trial" (cue
+    # sequences) are registered in snn2/engines/.
+    "engine": {},
 }
 
 

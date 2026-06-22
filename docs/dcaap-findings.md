@@ -10,8 +10,10 @@ limits are stated alongside the results.
 ## 0. The one idea everything traces back to
 
 The dCaAP neuron is a **non-monotonic band-pass unit**: it fires when its dendritic drive
-lands in a window `[lo, hi]` and falls silent both *below* and *above* it. Nearly every
-result here is a consequence of that single geometric fact. The central conceptual
+lands in a window `[lo, hi]` and falls silent both *below* and *above* it. The biological
+basis is the dendritic Ca²⁺ action potential reported by Gidon et al. (2020, *Science*
+367:83–87; see `dcaap.md` §8 for the full citation). Nearly every result here is a
+consequence of that single geometric fact. The central conceptual
 contribution is recognizing that several seemingly-separate learning phenomena are **the
 same thing** — the sign-flip of `dw/dt` produced by the band's upper edge:
 

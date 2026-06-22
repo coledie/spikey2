@@ -48,8 +48,9 @@ Run: python -m snn2.logic_gates
 from __future__ import annotations
 import numpy as np
 
-from .engine import run_bucket
-from ..spec import expand, GATES, _operand_rate_map
+from snn2.engines.trial import run_bucket
+from snn2 import expand, GATES
+from snn2.spec import _operand_rate_map
 
 
 # --------------------------------------------------------------------------- #

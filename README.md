@@ -140,24 +140,31 @@ entirely optional: the core runs on NumPy alone.
 ## Layout
 
 ```
-snn2/
+snn2/                   the package (pip install -e .)
   spec.py       presets, expand()->resolved, content-addressed hashing; GATES
-  registry.py   string -> pure-function parts
+  registry.py   string -> pure-function parts (neurons, inputs, ..., engines)
   parts.py      lif, izhikevich, dendritic(dCaAP), ratemap, threshold/population, ...
   stdp.py       stdp_delta (+ _batched) and stdp_delta_ref oracle
-  engine.py     run_bucket: batched loop with active-mask, feedforward-only weights
-  api.py        run / sweep / schedule / schedule_ray / tune_run
+  engines/      engine variants, each registered by name
+    batched.py    run_bucket for STATEFUL games (reset/step) -- engine="batched"
+    trial.py      run_bucket for TRIAL games (cue sequences) -- engine="trial"
+  api.py        run / sweep / schedule / schedule_ray / tune_run (dispatches by engine)
   validate.py   golden test vs oracle + analytic property tests
   florian.py    Florian (2007) MSTDPET, validated + figure
-  izhikevich.py Izhikevich (2003) regimes, validated + figure
-  conditioning.py  instrumental GO/NO-GO, grouping validation + figure
-  logic_gates.py   R-STDP logic-gate curriculum + dendritic XOR, validated + figure
-  SKILL.md      how an LLM drives this by writing specs only
 docs/
-  logic_gates.md   thorough write-up of the gate curriculum and dendritic XOR
+  usage.md         how an LLM drives this by writing specs only
+  dcaap.md / dcaap-findings.md   dCaAP background + research synthesis
 examples/
-  izhikevich.py / florian_fig1.py / conditioning.py / logic_gates.py
+  izh/izhikevich.py        Izhikevich (2003) random-state task (batched engine)
+  florian/florian_fig1.py  Florian (2007) figure
+  izh/conditioning.py      instrumental GO/NO-GO, grouping validation (trial engine)
+  logicgates/base/logic_gates.py  R-STDP gate curriculum + dendritic XOR (trial engine)
 ```
+
+The engine is selected by the spec's `engine` key (default `"batched"`); it is
+looked up in the registry exactly like any other part, so adding a third engine
+is one `@register("engine", "name")` in `snn2/engines/`.
+
 
 ## Learning logic gates with R-STDP, and dendritic XOR (Gidon et al. 2020)
 
@@ -170,8 +177,8 @@ threshold-level input, *suppressed* for stronger input, per Gidon et al. 2020)
 lets a single neuron **learn XOR to ~1.0**.
 
 ```bash
-python -m snn2.logic_gates          # curriculum table + 9 validation checks
-python examples/logic_gates.py      # also renders logic_gates.png
+python -m examples.logicgates.base.logic_gates   # curriculum table + 9 validation checks
+python examples/logicgates/base/logic_gates.py   # also renders logic_gates.png
 ```
 
 ![logic gates and dendritic XOR](logic_gates.png)
@@ -256,7 +263,7 @@ own — GO weights ratchet up from rewarded exploratory firing, NO-GO weights
 ratchet down from punished firing — and the agent learns the contingency.
 
 ```bash
-python examples/conditioning.py     # validate + render grouping_conditioning.png
+python examples/izh/conditioning.py     # validate + render grouping_conditioning.png
 ```
 
 ![grouping validated via instrumental conditioning](grouping_conditioning.png)
@@ -300,7 +307,7 @@ bursts while regular-spiking shows none.
 
 > The repo's `izhikevich2007.ipynb` is a different thing — an RL *learning task*
 > that runs the LIF neuron. That task is the `izhi_randstate` preset / the
-> `examples/izhikevich.py` sweep. This figure is the neuron-dynamics
+> `examples/izh/izhikevich.py` sweep. This figure is the neuron-dynamics
 > reproduction, using the true recovery-variable model the repo lacks.
 
 ## Reproducing Florian (2007) Figure 1
@@ -311,7 +318,7 @@ It implements the paper's exact eligibility-trace equations (Eqs 7, 8, 42–44),
 not the window approximation, so it matches the reference curve directly.
 
 ```bash
-python examples/florian_fig1.py     # validate + render florian_fig1.png
+python examples/florian/florian_fig1.py     # validate + render florian_fig1.png
 ```
 
 It is validated, not just plotted: the module's weight curve is asserted equal,

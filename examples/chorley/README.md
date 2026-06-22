@@ -300,7 +300,7 @@ bursts while regular-spiking shows none.
 
 > The repo's `izhikevich2007.ipynb` is a different thing — an RL *learning task*
 > that runs the LIF neuron. That task is the `izhi_randstate` preset / the
-> `examples/izhikevich.py` sweep. This figure is the neuron-dynamics
+> `examples/izh/izhikevich.py` sweep. This figure is the neuron-dynamics
 > reproduction, using the true recovery-variable model the repo lacks.
 
 ## Reproducing Florian (2007) Figure 1

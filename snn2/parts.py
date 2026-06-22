@@ -47,6 +47,25 @@ def izhikevich(state, I, p, rng):
     return state, fired
 
 
+@register("neuron", "dendritic")
+def dendritic(state, I, p, rng):
+    """dCaAP-inspired non-monotonic neuron (Gidon et al. 2020, Science).
+
+    Human layer 2/3 pyramidal dendrites fire calcium action potentials whose
+    amplitude is MAXIMAL for threshold-level input and DECREASES for stronger
+    input -- an anti-coincidence / band-pass activation. A single such dendrite
+    computes XOR: silent for no input (drive below the band), spikes for one
+    input (drive lands in the band), and is SUPPRESSED for two inputs (drive
+    overshoots above the band).
+
+    Modeled memorylessly: the dendrite emits a spike on any step whose drive I
+    falls inside the band [dcap_lo, dcap_hi]. Strong (two-input) drive sits above
+    the band and is suppressed -- the defining non-monotonicity. Learning places
+    the one- vs two-input drive levels relative to the fixed band."""
+    fired = (I >= p["dcap_lo"]) & (I <= p["dcap_hi"])
+    return state, fired
+
+
 def init_neuron_state(model, B, N, p):
     if model == "izhikevich":
         b = p["izhi_b"]
@@ -79,6 +98,12 @@ def population(out_spikes, p):
     return rates.argmax(axis=1)
 
 
+@register("readout", "population")
+def population(out_spikes, p):
+    rates = out_spikes.mean(axis=1)                 # [B, n_outputs]
+    return rates.argmax(axis=1)
+
+
 # --------------------------------------------------------------------------- #
 # Rewards  (state[B], action[B], state_next[B], p) -> reward[B]
 # --------------------------------------------------------------------------- #
@@ -88,12 +113,26 @@ def fire_states(state, action, state_next, p):
     return np.where(hit, p["reward_mult"], p["punish_mult"]).astype(np.float64)
 
 
+@register("reward", "match_action")
+def match_action(cue, action, cue_next, p):
+    """Instrumental contingency: reward iff the action taken equals the target
+    action for the current cue. `target_map` is per-lane [B, n_cues]."""
+    B = len(cue)
+    target = p["target_map"][np.arange(B), cue]              # [B]
+    correct = action == target
+    return np.where(correct, p["reward_mult"], p["punish_mult"]).astype(np.float64)
+
+
 # --------------------------------------------------------------------------- #
-# Games  -- minimal RL envs, batched.
+# Games
+#
+# STATEFUL games (for the "batched" engine) return a (reset, step) pair and are
+# driven with actions. TRIAL games (for the "trial" engine) return a per-lane
+# cue sequence [B, n_steps]; each step is one independent trial.
 # --------------------------------------------------------------------------- #
 @register("game", "randstate")
 def randstate(rng, p):
-    """Random-state task from examples/izhikevich2007.ipynb: each step the
+    """Stateful random-state task (examples/izhikevich2007.ipynb): each step the
     environment shows a uniformly random integer state in [0, n_states)."""
     B, n = p["_B"], p["n_states"]
 
@@ -106,3 +145,11 @@ def randstate(rng, p):
         return nxt, done
 
     return reset, step
+
+
+@register("game", "cue")
+def cue(rngs, p, n_steps):
+    """Trial-based task: each trial presents a uniform random cue in [0, n_cues).
+    Returns a per-lane cue sequence [B, n_steps] for the trial engine."""
+    B, n = p["_B"], p["n_cues"]
+    return np.stack([rngs[b].integers(0, n, size=n_steps) for b in range(B)])

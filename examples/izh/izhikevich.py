@@ -6,7 +6,7 @@ but expressed as DATA, run BATCHED, with a TRUE Izhikevich neuron instead of
 the LIF stand-in the original notebook used. No template class, no train_func,
 no Ray required to run it locally.
 
-    python examples/izhikevich.py
+    python examples/izh/izhikevich.py
 """
 import time
 import numpy as np

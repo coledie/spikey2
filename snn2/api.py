@@ -15,18 +15,25 @@ from collections import defaultdict
 from itertools import product
 
 from .spec import expand, spec_hash
-from .engine import run_bucket
+from .registry import get
+from . import engines  # noqa: F401  (import registers the engines)
+
+
+def _engine_for(resolved: dict):
+    """Look up the engine a resolved spec names (default set in spec.DEFAULTS)."""
+    return get("engine", resolved["engine"])
 
 
 def _bucket_key(r: dict):
-    """Same tensor shape => same bucket => can share one batched run."""
-    return (r["neuron"], r["input"], r["readout"], r["game"],
+    """Same engine + tensor shape => same bucket => can share one batched run."""
+    return (r["engine"], r["neuron"], r["input"], r["readout"], r["game"],
             r["n_inputs"], r["n_neurons"], r["n_outputs"],
             r["processing_time"], r["stdp_window"], r["n_states"])
 
 
 def run(spec: dict, seed: int = 0) -> dict:
-    return run_bucket([expand(spec)], seed=seed)[0]
+    r = expand(spec)
+    return _engine_for(r)([r], seed=seed)[0]
 
 
 def sweep(base: dict, grid: dict) -> list[dict]:
@@ -47,7 +54,8 @@ def schedule(specs: list[dict], seed: int = 0) -> dict:
     """Local batched scheduler. Returns {hash: metrics}, deduped by content."""
     out = {}
     for resolved in _bucketize(specs).values():
-        for m in run_bucket(resolved, seed=seed):
+        engine = _engine_for(resolved[0])
+        for m in engine(resolved, seed=seed):
             out[spec_hash(m["spec"])] = m
     return out
 
@@ -65,7 +73,8 @@ def schedule_ray(specs: list[dict], seed: int = 0, num_cpus=None) -> dict:
 
     @ray.remote
     def _run(resolved, seed):
-        return run_bucket(resolved, seed=seed)   # one Ray PROCESS per bucket -> own GIL
+        engine = get("engine", resolved[0]["engine"])
+        return engine(resolved, seed=seed)       # one Ray PROCESS per bucket -> own GIL
 
     futs = [_run.remote(b, seed) for b in _bucketize(specs).values()]
     out = {}

@@ -1,7 +1,7 @@
 """
-Batched engine. One leading axis B = many experiments at once. A single loop
-over time advances every lane; an `active` mask freezes lanes that have hit
-their (possibly different) episode length.
+Trial-based engine ("trial"). One leading axis B = many experiments at once. A
+single loop over time advances every lane; an `active` mask freezes lanes that
+have hit their (possibly different) episode length.
 
 Per-lane reproducibility: each lane is seeded from (global_seed, spec_hash), so a
 lane's randomness does NOT depend on which other lanes share its batch. That is
@@ -16,10 +16,10 @@ classical/instrumental conditioning experiments.
 from __future__ import annotations
 import numpy as np
 
-from . import parts as _parts          # registers the parts
-from .registry import get
-from .spec import spec_hash
-from .stdp import stdp_delta_batched
+from .. import parts as _parts          # registers the parts
+from ..registry import get, register
+from ..spec import spec_hash
+from ..stdp import stdp_delta_batched
 
 
 def _lane_rngs(specs, seed):
@@ -30,7 +30,9 @@ def _lane_rngs(specs, seed):
     return out
 
 
-def run_bucket(specs: list[dict], seed: int = 0, log_trials: bool = False) -> list[dict]:
+@register("engine", "trial")
+def run_bucket(specs: list[dict], seed: int = 0, log_trials: bool = False,
+               **_kw) -> list[dict]:
     """Run a bucket of same-shape specs, batched on axis B."""
     p0 = specs[0]
     B = len(specs)

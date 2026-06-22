@@ -178,3 +178,18 @@ Run any module: `cd snn2 && PYTHONPATH=. python -m snn2.<module>`
   a metaplasticity rule that keeps the operating point in-band automatically.
 - **Networks of dCaAPs.** Everything so far is single-neuron or single-synapse. The
   k-of-n result suggests layers of dCaAPs as configural feature detectors.
+
+---
+
+## 8. References
+
+- Gidon, A., Zolnik, T. A., Fidzinski, P., Bolduan, F., Papoutsi, A., Poirazi, P.,
+  Holtkamp, M., Vida, I., & Larkum, M. E. (2020). Dendritic action potentials and
+  computation in human layer 2/3 cortical neurons. *Science, 367*(6473), 83–87.
+  https://doi.org/10.1126/science.aax6239
+- Izhikevich, E. M. (2003). Simple model of spiking neurons. *IEEE Transactions on
+  Neural Networks, 14*(6), 1569–1572. https://doi.org/10.1109/TNN.2003.820440
+- Florian, R. V. (2007). Reinforcement learning through modulation of spike-timing-
+  dependent synaptic plasticity. *Neural Computation, 19*(6), 1468–1502.
+  https://doi.org/10.1162/neco.2007.19.6.1468
+

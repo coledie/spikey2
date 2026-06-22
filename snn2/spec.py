@@ -1,11 +1,8 @@
 """
-Spec layer (examples build). An experiment is a flat dict; a preset carries the
-defaults and the spec carries only the deltas. `expand` resolves a sparse spec
-into the full config that actually runs (and that gets hashed).
-
-This is the *trial-based* build used by the conditioning and logic-gate
-examples: games return a per-lane cue sequence and the engine scopes
-eligibility to each trial. It is a superset of the izhi_randstate preset.
+Spec layer. An experiment is a flat dict. Presets carry the defaults; a spec
+carries only the deltas. `expand` turns a 3-line spec into the fully-resolved
+config that actually runs -- and the resolved config (not the sparse input) is
+what gets hashed, so reproducibility stays honest even when the input is tiny.
 """
 from __future__ import annotations
 import hashlib
@@ -14,6 +11,7 @@ import numpy as np
 
 # Registry-level defaults: anything here may be omitted from a spec.
 DEFAULTS = {
+    "engine": "batched",         # which registered engine runs the bucket
     "potential_decay": 0.05,
     "resting_mv": 0.0,
     "firing_threshold": 8.0,
@@ -23,7 +21,6 @@ DEFAULTS = {
     "max_weight": 2.0,
     "reward_mult": 1.0,
     "punish_mult": 0.0,
-    "input_gain": 1.0,
     # regular-spiking Izhikevich
     "izhi_a": 0.02, "izhi_b": 0.2, "izhi_c": -65.0, "izhi_d": 8.0,
 }
@@ -37,22 +34,29 @@ GATES = {
     "NOR":  [1, 0, 0, 0],
 }
 
-# Whole-experiment presets. Name one and override a few keys.
+# Whole-experiment presets. The LLM names one and overrides a few keys.
 PRESETS = {
     "izhi_randstate": {
+        "engine": "batched",
         "game": "randstate", "n_states": 10,
-        "neuron": "izhikevich", "input": "ratemap",
-        "synapse": "ltp", "readout": "threshold",
+        "neuron": "izhikevich",
+        "input": "ratemap",
+        "synapse": "ltp",            # reward-modulated LTP (validated in stdp.py)
+        "readout": "threshold",
         "reward": "fire_states", "reward_fire_states": [0, 3, 6, 9],
         "n_inputs": 100, "n_neurons": 50,
         "processing_time": 100, "stdp_window": 100,
-        "lr": 0.1, "input_gain": 5.0, "len_episode": 100,
-        "encoding": "state", "state_rate": 0.2,
+        "lr": 0.1,
+        # Izhikevich fires near +30 mV, so it needs real input current, not the
+        # tiny LIF-scale drive; the preset owns that detail so the user never sees it.
+        "input_gain": 5.0,
+        "len_episode": 100,
     },
     # GO / NO-GO instrumental conditioning: 2 cues -> 2 input groups, one output
     # neuron, binary action (fire / stay silent), reward when action matches the
     # cue's target. Linearly separable, so a monotonic point neuron solves it.
     "instrumental": {
+        "engine": "trial",
         "game": "cue", "n_cues": 2,
         "neuron": "lif", "input": "ratemap",
         "synapse": "ltp", "readout": "threshold", "reward": "match_action",
@@ -66,6 +70,7 @@ PRESETS = {
     },
     # Logic-gate curriculum on a monotonic LIF point neuron (OR / AND / XOR).
     "logic_monotonic": {
+        "engine": "trial",
         "game": "cue", "n_cues": 4,
         "neuron": "lif", "input": "ratemap",
         "synapse": "ltp", "readout": "threshold", "reward": "match_action",
@@ -79,6 +84,7 @@ PRESETS = {
     },
     # Same task, dCaAP (band-pass / anti-coincidence) neuron -> solves XOR.
     "logic_dendritic": {
+        "engine": "trial",
         "game": "cue", "n_cues": 4,
         "neuron": "dendritic", "input": "ratemap",
         "synapse": "ltp", "readout": "threshold", "reward": "match_action",

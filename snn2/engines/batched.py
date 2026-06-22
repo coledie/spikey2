@@ -1,18 +1,22 @@
 """
-Batched engine. One leading axis B = many experiments at once. A single
-`step()` advances every lane; an `active` mask freezes lanes that have hit
-their (possibly different) episode length, so heterogeneous and
+Batched engine ("batched"). One leading axis B = many experiments at once. A
+single `step()` advances every lane; an `active` mask freezes lanes that have
+hit their (possibly different) episode length, so heterogeneous and
 logically-staggered runs share one loop. The only Python loops are over time.
+
+Games here are STATEFUL: a game returns a (reset, step) pair and the engine
+drives it with actions (reset/env_step), as in the original randstate task.
 """
 from __future__ import annotations
 import numpy as np
 
-from . import parts as _parts          # registers the parts
-from .registry import get
-from .stdp import stdp_delta_batched
+from .. import parts as _parts          # registers the parts
+from ..registry import get, register
+from ..stdp import stdp_delta_batched
 
 
-def run_bucket(resolved_specs: list[dict], seed: int = 0) -> list[dict]:
+@register("engine", "batched")
+def run_bucket(resolved_specs: list[dict], seed: int = 0, **_kw) -> list[dict]:
     """Run a bucket of specs that SHARE network shape, batched on axis B.
 
     Returns one metrics dict per spec, in input order. Lanes with shorter
