@@ -1,13 +1,11 @@
 # snn2
 
-A redesign of [Spikey](https://github.com/SpikeyCNS/spikey) around three goals:
+A redesign of [Spikey](https://github.com/SpikeyCNS/spikey) around two goals:
 
-- **(a) many experiments at once** — thousands of logically-different, possibly
-  staggered runs, scheduled together.
-- **(b) fast *and* provably correct** — the RL-STDP rule is a pure function pinned
+- **(a) fast *and* provably correct** — the RL-STDP rule is a pure function pinned
   to a reference oracle; speed comes from batching, trust comes from validation.
-- **(c) light and LLM-/everyone-friendly** — an experiment is a three-line dict,
-  not a class hierarchy. No Ray required to run one.
+- **(b) light and LLM-friendly** — an experiment is a three-line dict,
+  not a class hierarchy.
 
 It keeps Spikey's faithful semantics (LIF + reward-modulated STDP, rate-coded
 inputs, the random-state task) but changes *how you express and run* experiments.
@@ -326,12 +324,3 @@ byte-for-byte, to an independent inlined transcription of the equations
 (w: 0.200 → 0.316, peak 0.416), plus the qualitative facts — pre-before-post
 gives positive eligibility, weight potentiates under positive reward, and the
 same eligibility reduces the weight once reward turns negative.
-
-## Honest limits
-
-- Same-shape-only batching; differing sizes are bucketed (handled, but more
-  buckets = less batch parallelism).
-- The bundled games (`randstate`) are minimal; a real CartPole/Gymnasium adapter
-  is a registered `game` part you'd add (5-tuple → 4-tuple shim).
-- Engine is NumPy; the same pure functions are JAX-`vmap`/`jit`-ready for GPU,
-  which is the intended fast path at large `B`.
